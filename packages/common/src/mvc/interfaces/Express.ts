@@ -1,4 +1,6 @@
-import {EndpointMetadata} from "../class/EndpointMetadata";
+import {Context} from "../models/Context";
+import {EndpointMetadata} from "../models/EndpointMetadata";
+import {RequestLogger} from "../models/RequestLogger";
 
 declare global {
   namespace Express {
@@ -14,56 +16,44 @@ declare global {
 
     export interface Request {
       id: string;
-      tagId: string;
-      tsedReqStart: Date;
-      $tryAuth: (request: Express.Request, response: Express.Response, next: Express.NextFunction, authorization?: any) => boolean;
+      ctx: Context;
+      log: RequestLogger;
 
       /**
-       *
+       * @deprecated
        */
       getContainer(): any;
 
       /**
-       *
+       * @deprecated
        */
       createContainer(): void;
 
       /**
-       *
+       * @deprecated
        */
       destroyContainer(): void;
 
       /**
-       *
+       * @deprecated
        */
       getEndpoint(): EndpointMetadata;
 
+      /**
+       * @deprecated
+       */
       destroyEndpoint(): void;
 
       /**
-       *
+       * @deprecated
        */
       getStoredData(): any;
 
       /**
-       *
+       * @deprecated
        * @param obj
        */
       storeData(obj: any): Express.Request;
-
-      log: RequestLogger;
-    }
-
-    export interface RequestLogger {
-      debug(scope?: any): void;
-
-      info(scope?: any): void;
-
-      trace(scope?: any): void;
-
-      warn(scope?: any): void;
-
-      error(scope?: any): void;
     }
   }
 }

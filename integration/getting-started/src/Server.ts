@@ -1,6 +1,7 @@
 import {GlobalAcceptMimesMiddleware, ServerLoader, ServerSettings} from "@tsed/common";
 import "@tsed/swagger";
-import {$log} from "ts-log-debug";
+import {join} from "path";
+import {RestCtrl} from "./controllers/RestCtrl";
 
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
@@ -11,24 +12,40 @@ const rootDir = __dirname;
 @ServerSettings({
   rootDir,
   acceptMimes: ["application/json"],
+  httpPort: 8083,
   logger: {
-    debug: false,
+    debug: true,
     logRequest: true,
     requestFields: ["reqId", "method", "url", "headers", "query", "params", "duration"]
   },
-  swagger: {
-    path: "/api-docs"
+  mount: {
+    "/rest": [
+      RestCtrl, // Manual import
+      `${rootDir}/controllers/**/*.ts` // Automatic Import, /!\ doesn't works with webpack/jest, use  require.context() or manual import instead
+    ]
   },
+  swagger: [
+    {
+      path: "/api-docs"
+    }
+  ],
   calendar: {
     token: true
+  },
+  statics: {
+    "/statics": join(__dirname, "..", "statics")
   }
 })
 export class Server extends ServerLoader {
+  constructor(settings) {
+    super(settings);
+  }
+
   /**
    * This method let you configure the middleware required by your application to works.
    * @returns {Server}
    */
-  $onMountingMiddlewares(): void | Promise<any> {
+  $beforeRoutesInit(): void | Promise<any> {
     this
       .use(GlobalAcceptMimesMiddleware)
       .use(cookieParser())
@@ -40,13 +57,5 @@ export class Server extends ServerLoader {
       }));
 
     return null;
-  }
-
-  $onReady() {
-    $log.debug("Server initialized");
-  }
-
-  $onServerInitError(error): any {
-    $log.error("Server encounter an error =>", error);
   }
 }

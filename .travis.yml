@@ -3,7 +3,6 @@ cache:
   directories:
     - ~/.npm
 notifications:
-  email: false
   webhooks:
     urls:
       - $GITTER_ROOM_URL
@@ -13,11 +12,11 @@ notifications:
 node_js:
   - '11.6.0'
   - '10'
-  - '9'
   - '8'
 after_success:
   - npm run travis:deploy-once "npm run semantic-release"
   - npm run travis:deploy-once "gulp docs:publish"
+  - npm run travis:deploy-once "gulp examples:publish"
   - npm run travis:coveralls
 branches:
   except:

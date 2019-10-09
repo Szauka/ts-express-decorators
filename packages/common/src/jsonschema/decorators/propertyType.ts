@@ -1,6 +1,6 @@
 import {Type} from "@tsed/core";
 import {PropertyMetadata} from "../class/PropertyMetadata";
-import {PropertyRegistry} from "../registries/PropertyRegistry";
+import {PropertyFn} from "./property";
 
 /**
  * Set the type of the array items. The possible value is String, Boolean, Number, Date, Object, Class, etc...
@@ -15,7 +15,9 @@ import {PropertyRegistry} from "../registries/PropertyRegistry";
  *    property: string[];
  * }
  * ```
- * !> You didn't use the `type Type = string | number` as parameters Type.
+ * ::: warning
+ * You didn't use the `type Type = string | number` as parameters Type.
+ * :::
  *
  * Didn't works:
  *
@@ -42,9 +44,11 @@ import {PropertyRegistry} from "../registries/PropertyRegistry";
  * @returns {Function}
  * @decorator
  * @converters
+ * @jsonschema
+ * @property
  */
 export function PropertyType(type: Type<any>) {
-  return PropertyRegistry.decorate((propertyMetadata: PropertyMetadata) => {
+  return PropertyFn((propertyMetadata: PropertyMetadata) => {
     propertyMetadata.type = type;
   });
 }

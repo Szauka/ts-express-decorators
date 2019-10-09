@@ -1,26 +1,13 @@
+import * as Sinon from "sinon";
+import {SinonStatic, SinonStub} from "sinon";
+import {Context} from "../../packages/common/src/mvc/models/Context";
+
 export class FakeRequest {
-  url = "/";
-  method: string;
-  path: string;
-  mime: string;
-  id: number;
-  tagId: string;
-  _responseData: any;
-  _endpoint: any;
-  public accepts = (mime: string) => this.mime === mime;
-
-  public log: Express.RequestLogger = {
-    debug: (scope?: any) => {},
-
-    info: (scope?: any) => {},
-
-    trace: (scope?: any) => {},
-
-    warn: (scope?: any) => {},
-
-    error: (scope?: any) => {}
-  };
-
+  public url = "/";
+  public method: string;
+  public path: string;
+  public mime: string;
+  public id: number;
   /**
    *
    * @type {{test: string, obj: {test: string}}}
@@ -61,7 +48,6 @@ export class FakeRequest {
       test: "testValue"
     }
   };
-
   public session: any = {
     test: "testValue",
     obj: {
@@ -69,39 +55,32 @@ export class FakeRequest {
     }
   };
 
-  public get(expression: any) {
-    return "headerValue";
+  public headers: any = {
+    "content-type": "application/json"
+  };
+
+  public ctx = new Context({id: "id"});
+  public log: {[key: string]: SinonStub};
+  public isAuthenticated: SinonStub;
+  public accepts: SinonStub;
+  public get: SinonStub;
+
+  [key: string]: any;
+
+  constructor(sandbox: SinonStatic = Sinon) {
+    this.log = {
+      debug: sandbox.stub(),
+      info: sandbox.stub(),
+      warn: sandbox.stub(),
+      error: sandbox.stub(),
+      trace: sandbox.stub(),
+      flush: sandbox.stub()
+    };
+
+    this.isAuthenticated = sandbox.stub();
+    this.accepts = sandbox.stub().callsFake((mime: string) => this.mime === mime);
+    this.get = sandbox.stub().callsFake((value) => {
+      return value ? (this.headers[value.toLowerCase()] || "headerValue") : this.headers;
+    });
   }
-
-  public getStoredData() {
-    return this._responseData || {};
-  }
-
-  public storeData(data: any) {
-    this._responseData = data;
-
-    return this;
-  }
-
-  public getEndpoint() {
-    return (
-      this._endpoint || {
-        store: {
-          get: () => {}
-        }
-      }
-    );
-  }
-
-  public setEndpoint(endpoint: any) {
-    this._endpoint = endpoint;
-  }
-
-  public destroyEndpoint() {}
-
-  public createContainer() {}
-
-  public destroyContainer() {}
-
-  public end() {}
 }

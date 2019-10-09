@@ -1,6 +1,7 @@
 import {MongooseModelOptions} from "../interfaces/MongooseModelOptions";
 import {registerModel} from "../registries/MongooseModelRegistry";
-import {createModel, createSchema} from "../utils";
+import {createModel, getSchema} from "../utils";
+import {applySchemaOptions} from "../utils/schemaOptions";
 
 /**
  * Define a class as a Mongoose Model. The model can be injected to the Service, Controller, Middleware, Converters or Filter with
@@ -37,10 +38,11 @@ import {createModel, createSchema} from "../utils";
  * @returns {(target: any) => void}
  * @decorator
  * @mongoose
+ * @class
  */
 export function Model(options: MongooseModelOptions = {}) {
   return (target: any) => {
-    const schema = createSchema(target, options);
-    registerModel(target, createModel(target, schema, options.name, options.collection, options.skipInit));
+    registerModel(target, createModel(target, getSchema(target, options), options.name, options.collection, options.skipInit));
+    applySchemaOptions(target, {});
   };
 }

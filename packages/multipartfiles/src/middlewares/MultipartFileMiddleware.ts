@@ -1,42 +1,46 @@
-import {EndpointInfo, EndpointMetadata, IMiddleware, Middleware, Req, Res, ServerSettingsService} from "@tsed/common";
-import * as Express from "express";
+import {Configuration, EndpointInfo, IMiddleware, Middleware, Req, Res} from "@tsed/common";
 import * as multer from "multer";
 import {BadRequest} from "ts-httpexceptions";
+import {promisify} from "util";
 
 /**
- * @private
  * @middleware
  */
 @Middleware()
 export class MultipartFileMiddleware implements IMiddleware {
   private multer: any = multer;
 
-  constructor(private serverSettingsService: ServerSettingsService) {}
+  constructor(@Configuration() private configuration: Configuration) {}
 
-  /**
-   *
-   * @param endpoint
-   * @param request
-   * @param response
-   * @returns {any}
-   */
-  use(@EndpointInfo() endpoint: EndpointMetadata, @Req() request: Express.Request, @Res() response: Express.Response) {
-    const dest = this.serverSettingsService.uploadDir;
-    const conf = endpoint.store.get(MultipartFileMiddleware);
-    const options = Object.assign({dest}, this.serverSettingsService.get("multer") || {}, conf.options || {});
+  async use(@EndpointInfo() endpoint: EndpointInfo, @Req() request: Req, @Res() response: Res) {
+    try {
+      const endpointConfiguration = endpoint.get(MultipartFileMiddleware);
 
-    return new Promise((resolve, reject) => {
-      const onResponse = (err: any) => (err ? reject(err) : resolve());
-
-      if (!conf.any) {
-        const fields = conf.fields.map(({name, maxCount}: any) => ({name, maxCount}));
-
-        return this.multer(options).fields(fields)(request, response, onResponse);
-      }
-
-      return this.multer(options).any()(request, response, onResponse);
-    }).catch(er => {
+      return await promisify(this.invoke(endpointConfiguration))(request, response);
+    } catch (er) {
       throw er.code ? new BadRequest(`${er.message} ${er.field || ""}`.trim()) : er;
-    });
+    }
+  }
+
+  invoke(conf: any) {
+    const dest = this.configuration.uploadDir;
+    const options = {
+      dest,
+      ...(this.configuration.get("multer") || {}),
+      ...(conf.options || {})
+    };
+
+    /* istanbul ignore next */
+    if (options.storage) {
+      delete options.dest;
+    }
+
+    if (!conf.any) {
+      const fields = conf.fields.map(({name, maxCount}: any) => ({name, maxCount}));
+
+      return this.multer(options).fields(fields);
+    }
+
+    return this.multer(options).any();
   }
 }

@@ -24,16 +24,16 @@ const rootDir = __dirname;
   },
   swagger: {
     path: "/docs"
-  }
+  },
+  socketIO: {}
 })
 export class Server extends ServerLoader {
-
   $onInit(): void | Promise<any> {
     this.set("views", this.settings.get("viewsDir")); // le repertoire des vues
     this.engine("ejs", cons.ejs);
   }
 
-  $onMountingMiddlewares() {
+  $beforeRoutesInit() {
     this
       .use(GlobalAcceptMimesMiddleware)
       .use(methodOverride())

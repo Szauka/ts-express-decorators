@@ -1,5 +1,5 @@
 import {DecoratorParameters} from "../interfaces";
-import {deepExtends, descriptorOf, getDecoratorType, nameOf} from "../utils";
+import {deepClone, deepExtends, descriptorOf, getDecoratorType, isSymbol, nameOf} from "../utils";
 
 import {Metadata} from "./Metadata";
 
@@ -9,6 +9,8 @@ export const PROPERTY_STORE = "tsed:property:store";
 export const PARAM_STORE = "tsed:param:store";
 
 export type StoreMap = Map<string, any>;
+
+const stores = new Map<symbol, any>();
 
 /**
  *
@@ -68,8 +70,11 @@ export class Store {
    * Create a store correctly configured from the parameters given by the decorator.
    * The `fn` can return a decorator that will be initialized with the parameters (target, propertyKey, descriptor).
    * @param {(store: Store, parameters: DecoratorParameters) => void} fn
+   * @deprecated Use StoreFn
    * @returns {Function}
    */
+
+  /* istanbul ignore next */
   static decorate(fn: (store: Store, parameters: DecoratorParameters) => void): Function {
     return (...parameters: any[]): any => {
       const store = Store.from(...parameters);
@@ -176,16 +181,19 @@ export class Store {
   }
 
   /**
-   *
+   * Merge given value with existing value.
    * @param key
    * @param value
+   * @param inverse Change the merge order. Get the existing value and apply over given value
    * @returns {Store}
    */
-  merge(key: any, value: any): Store {
-    const _value_ = this.get(key);
+  merge(key: any, value: any, inverse: boolean = false): Store {
+    let _value_ = this.get(key);
 
     if (_value_) {
-      value = deepExtends(_value_, value);
+      value = deepClone(value);
+      _value_ = deepClone(_value_);
+      value = inverse ? deepExtends(value, _value_) : deepExtends(_value_, value);
     }
 
     this.set(key, value);
@@ -209,12 +217,20 @@ export class Store {
    * @private
    */
   private _storeGet(key: string, ...args: any[]): StoreMap {
-    const registry = Metadata as any;
+    if (isSymbol(args[0])) {
+      if (!stores.has(args[0])) {
+        stores.set(args[0], new Map<string, any>());
+      }
 
-    if (!registry.hasOwn(key, ...args)) {
-      registry.set(key, new Map<string, any>(), ...args);
+      return stores.get(args[0]);
+    } else {
+      const registry = Metadata as any;
+
+      if (!registry.hasOwn(key, ...args)) {
+        registry.set(key, new Map<string, any>(), ...args);
+      }
+
+      return registry.getOwn(key, ...args);
     }
-
-    return registry.getOwn(key, ...args);
   }
 }

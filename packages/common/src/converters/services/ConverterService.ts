@@ -1,6 +1,6 @@
 import {getClass, isArrayOrArrayClass, isEmpty, isPrimitiveOrPrimitiveClass, Metadata, Store, Type} from "@tsed/core";
-import {InjectorService, Service} from "@tsed/di";
-import {ServerSettingsService} from "../../config/services/ServerSettingsService";
+import {Configuration, Injectable, InjectorService} from "@tsed/di";
+import {BadRequest} from "ts-httpexceptions";
 import {PropertyMetadata} from "../../jsonschema/class/PropertyMetadata";
 import {PropertyRegistry} from "../../jsonschema/registries/PropertyRegistry";
 import {CONVERTER} from "../constants/index";
@@ -10,12 +10,12 @@ import {RequiredPropertyError} from "../errors/RequiredPropertyError";
 import {UnknowPropertyError} from "../errors/UnknowPropertyError";
 import {IConverter, IConverterOptions, IDeserializer, ISerializer} from "../interfaces/index";
 
-@Service()
+@Injectable()
 export class ConverterService {
   private validationModelStrict = true;
 
-  constructor(private injectorService: InjectorService, serverSettings: ServerSettingsService) {
-    this.validationModelStrict = serverSettings.get<boolean>("validationModelStrict");
+  constructor(private injectorService: InjectorService, @Configuration() configuration: Configuration) {
+    this.validationModelStrict = configuration.get<boolean>("validationModelStrict");
   }
 
   /**
@@ -110,13 +110,20 @@ export class ConverterService {
     keys.forEach(propertyKey => {
       if (typeof obj[propertyKey] !== "function") {
         let propertyMetadata = ConverterService.getPropertyMetadata(properties, propertyKey);
-
+        let propertyValue = obj[propertyKey];
         propertyMetadata = propertyMetadata || ({} as any);
-        plainObject[propertyMetadata!.name || propertyKey] = this.serialize(obj[propertyKey], {
+
+        propertyValue = this.serialize(propertyValue, {
           checkRequiredValue // ,
           // TODO revert change
           // type: propertyMetadata!.type
         });
+
+        if (typeof propertyMetadata!.onSerialize === "function") {
+          propertyValue = propertyMetadata!.onSerialize(propertyValue);
+        }
+
+        plainObject[propertyMetadata!.name || propertyKey] = propertyValue;
       }
     });
 
@@ -228,11 +235,15 @@ export class ConverterService {
 
     propertyMetadata = propertyMetadata || ({} as any);
 
-    const propertyValue = obj[propertyMetadata!.name] || obj[propertyName];
+    let propertyValue = obj[propertyMetadata!.name] || obj[propertyName];
     const propertyKey = propertyMetadata!.propertyKey || propertyName;
 
     try {
       if (typeof instance[propertyKey] !== "function") {
+        if (typeof propertyMetadata!.onDeserialize === "function") {
+          propertyValue = propertyMetadata!.onDeserialize(propertyValue);
+        }
+
         instance[propertyKey] = this.deserialize(
           propertyValue,
           propertyMetadata!.isCollection ? propertyMetadata!.collectionType : propertyMetadata!.type,
@@ -243,7 +254,12 @@ export class ConverterService {
     } catch (err) {
       /* istanbul ignore next */
       (() => {
-        const castedError: any = new Error("For " + String(propertyKey) + " with value " + propertyValue + " \n" + err.message);
+        const castedErrorMessage = `Error for ${propertyName} with value ${JSON.stringify(propertyValue)} \n ${err.message}`;
+        if (err instanceof BadRequest) {
+          throw new BadRequest(castedErrorMessage);
+        }
+        const castedError: any = new Error(castedErrorMessage);
+        castedError.status = err.status;
         castedError.stack = err.stack;
         castedError.origin = err;
 

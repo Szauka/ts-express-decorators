@@ -1,5 +1,12 @@
 import {expect} from "chai";
-import {getDecoratorType, UnsupportedDecoratorType} from "../../src";
+import {
+  applyDecorators,
+  decorateMethodsOf,
+  descriptorOf,
+  getDecoratorType,
+  Store, StoreFn,
+  UnsupportedDecoratorType
+} from "../../src";
 
 class Test {
 }
@@ -180,15 +187,15 @@ describe("DecoratorUtils", () => {
     };
 
     it("should return class", () => {
-      expect(createError([Test])).to.equal("Decorator cannot used as class at Test");
+      expect(createError([Test])).to.equal("Decorator cannot used as class decorator on Test");
     });
 
     it("should return property (static)", () => {
-      expect(createError([Test, "props"])).to.equal("Decorator cannot used as property.static at Test.props");
+      expect(createError([Test, "props"])).to.equal("Decorator cannot used as property.static decorator on Test.props");
     });
 
     it("should return property (instance)", () => {
-      expect(createError([Test.prototype, "props"])).to.equal("Decorator cannot used as property at Test.props");
+      expect(createError([Test.prototype, "props"])).to.equal("Decorator cannot used as property decorator on Test.props");
     });
 
     it("should return method (instance, getter)", () => {
@@ -201,7 +208,7 @@ describe("DecoratorUtils", () => {
             }
           }
         ])
-      ).to.equal("Decorator cannot used as property at Test.props");
+      ).to.equal("Decorator cannot used as property decorator on Test.props");
     });
 
     it("should return method (instance, setter)", () => {
@@ -214,7 +221,7 @@ describe("DecoratorUtils", () => {
             }
           }
         ])
-      ).to.equal("Decorator cannot used as property at Test.props");
+      ).to.equal("Decorator cannot used as property decorator on Test.props");
     });
 
     it("should return method (static)", () => {
@@ -227,7 +234,7 @@ describe("DecoratorUtils", () => {
             }
           }
         ])
-      ).to.equal("Decorator cannot used as method.static at Test.props");
+      ).to.equal("Decorator cannot used as method.static decorator on Test.props");
     });
 
     it("should return method (instance)", () => {
@@ -240,19 +247,81 @@ describe("DecoratorUtils", () => {
             }
           }
         ])
-      ).to.equal("Decorator cannot used as method at Test.props");
+      ).to.equal("Decorator cannot used as method decorator on Test.props");
     });
 
     it("should return params (static)", () => {
-      expect(createError([Test, "props", 0])).to.equal("Decorator cannot used as parameter.static at Test.props");
+      expect(createError([Test, "props", 0])).to.equal("Decorator cannot used as parameter.static decorator on Test.props");
     });
 
     it("should return params (instance)", () => {
-      expect(createError([Test.prototype, "props", 0])).to.equal("Decorator cannot used as parameter at Test.props.[0]");
+      expect(createError([Test.prototype, "props", 0])).to.equal("Decorator cannot used as parameter decorator on Test.props.[0]");
     });
 
     it("should return params (constructor)", () => {
-      expect(createError([Test.prototype, undefined, 0])).to.equal("Decorator cannot used as parameter.constructor at Test");
+      expect(createError([Test.prototype, undefined, 0])).to.equal("Decorator cannot used as parameter.constructor decorator on Test");
+    });
+  });
+
+  describe("decorateMethodsOf", () => {
+    it("should decorate all methods", () => {
+      function decorate() {
+        return (target: any) => {
+          decorateMethodsOf(target, (klass: any, property: any, descriptor: any) => {
+            Store.from(klass, property, descriptor).set("test", property);
+          });
+        };
+      }
+
+      class TestParent {
+        test2(a: any) {
+          return "test" + a;
+        }
+      }
+
+      // WHEN
+      @decorate()
+      class Test extends TestParent {
+        test() {
+        }
+      }
+
+      // THEN
+      Store.from(Test, "test", descriptorOf(Test, "test")).get("test").should.eq("test");
+      Store.from(Test, "test2", descriptorOf(Test, "test2")).get("test").should.eq("test2");
+
+      new Test().test2("1").should.eq("test1");
+    });
+  });
+
+  describe("applyDecorators", () => {
+
+    function decorator1(value: any) {
+      return StoreFn((store) => {
+        store.set("decorator1", value);
+      });
+    }
+
+    function decorator2(value: any) {
+      return StoreFn((store) => {
+        store.set("decorator2", value);
+      });
+    }
+
+    function decorate() {
+      return applyDecorators(
+        decorator1("test1"),
+        decorator2("test2")
+      );
+    }
+
+    @decorate()
+    class Test {
+    }
+
+    it("should apply all decorators", () => {
+      Store.from(Test).get("decorator1").should.eq("test1");
+      Store.from(Test).get("decorator2").should.eq("test2");
     });
   });
 });

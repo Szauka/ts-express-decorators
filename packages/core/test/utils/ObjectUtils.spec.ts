@@ -1,5 +1,7 @@
 import {expect} from "chai";
 import {
+  classOf,
+  constructorOf,
   getClass,
   getClassOrSymbol,
   getConstructor,
@@ -7,13 +9,31 @@ import {
   isClass,
   isCollection,
   isEmpty,
+  isInheritedFrom,
   isPrimitiveOrPrimitiveClass,
+  isPromise,
+  methodsOf,
   nameOf,
   nameOfClass,
   primitiveOf
 } from "../../src";
 
-class Test {
+class Base {
+  test1() {
+
+  }
+
+  test3() {
+  }
+}
+
+class Test extends Base {
+  test1() {
+
+  }
+
+  test2() {
+  }
 }
 
 const sym = Symbol("test2");
@@ -172,6 +192,16 @@ describe("ObjectUtils", () => {
     });
   });
 
+  describe("isPromise()", () => {
+    it("should return true", () => {
+      expect(isPromise(Promise)).to.eq(true);
+    });
+
+    it("should return true", () => {
+      expect(isPromise(Promise.resolve())).to.eq(true);
+    });
+  });
+
   describe("nameOf", () => {
     it("should return name when class is given", () => {
       expect(nameOf(Test)).to.eq("Test");
@@ -220,6 +250,93 @@ describe("ObjectUtils", () => {
 
     it("should return any", () => {
       expect(primitiveOf(Object)).to.eq("any");
+    });
+  });
+
+  describe("constructorOf()", () => {
+    it("should return the constructor when class is given", () => {
+      expect(constructorOf(Test)).to.eq(Test);
+    });
+    it("should return the constructor when instance is given", () => {
+      expect(constructorOf(new Test())).to.eq(Test);
+    });
+  });
+
+  describe("classOf()", () => {
+    it("should return the class when class is given", () => {
+      expect(classOf(Test)).to.eq(Test);
+    });
+
+    it("should return the class when instance is given", () => {
+      expect(classOf(new Test())).to.eq(Test);
+    });
+
+    it("should return the class when prototype is given", () => {
+      expect(classOf(Test.prototype)).to.eq(Test);
+    });
+  });
+
+  describe("methodsOf", () => {
+    it("should return all methods", () => {
+      const methods = methodsOf(Test);
+      expect(methods).to.deep.eq([
+        {propertyKey: "test1", target: Test},
+        {propertyKey: "test3", target: Base},
+        {propertyKey: "test2", target: Test}
+      ]);
+    });
+  });
+  describe("isInheritedFrom", () => {
+    it("should return true when class inherit from another", () => {
+      class Test1 {
+
+      }
+
+      class Test2 extends Test1 {
+      }
+
+      expect(isInheritedFrom(Test2, Test1)).to.eq(true);
+    });
+    it("should return false when deep is down", () => {
+      class Test1 {
+
+      }
+
+      class Test2 extends Test1 {
+      }
+
+      class Test3 extends Test2 {
+      }
+
+      expect(isInheritedFrom(Test3, Test1, 1)).to.eq(false);
+    });
+
+    it("should return true when deep is not down", () => {
+      class Test1 {
+
+      }
+
+      class Test2 extends Test1 {
+      }
+
+      class Test3 extends Test2 {
+      }
+
+      expect(isInheritedFrom(Test3, Test1, 3)).to.eq(true);
+    });
+
+    it("should return false when class isn't inherit from another", () => {
+      class Test1 {
+      }
+
+      class Test3 {
+      }
+
+      expect(isInheritedFrom(Test3, Test1)).to.eq(false);
+    });
+
+    it("should return false when undefined is given", () => {
+      expect(isInheritedFrom(undefined, undefined)).to.eq(false);
     });
   });
 });

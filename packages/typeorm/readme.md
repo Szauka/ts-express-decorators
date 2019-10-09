@@ -24,7 +24,7 @@ To begin, install the TypeORM module for TS.ED:
 npm install --save @tsed/typeorm
 ```
 
-Then import `@tsed/typeorm` in your [ServerLoader](/api/common/server/components/ServerLoader.md):
+Then import `@tsed/typeorm` in your [ServerLoader](https://tsed.io/api/common/server/components/ServerLoader.html):
 
 ```typescript
 import {ServerLoader, ServerSettings} from "@tsed/common";
@@ -64,12 +64,12 @@ export class Server extends ServerLoader {
 TypeORMService let you to retrieve an instance of TypeORM Connection.
 
 ```typescript
-import {Service, AfterInit} from "@tsed/common";
+import {Service, AfterRoutesInit} from "@tsed/common";
 import {TypeORMService} from "@tsed/typeorm";
 import {Connection} from "typeorm";
 
 @Service()
-export class UsersService implement AfterRoutesInit {
+export class UsersService implements AfterRoutesInit {
     private connection: Connection;
     constructor(private typeORMService: TypeORMService) {
 
@@ -134,7 +134,7 @@ export class User {
 }
 ```
 
-Now, the model is correctly defined and can be used with a [Controller](docs/controllers.md), [AJV validation](tutorials/ajv.md),
+Now, the model is correctly defined and can be used with a [Controller](https://tsed.io/docs/controllers.html), [AJV validation](tutorials/ajv.md),
 [Swagger](tutorials/swagger.md) and [TypeORM](https://github.com/typeorm/typeorm).
 
 We can use this model with a Controller like that:
@@ -164,9 +164,9 @@ export class UsersCtrl {
 ```
 
 ## Contributors
-Please read [contributing guidelines here](./CONTRIBUTING.md).
+Please read [contributing guidelines here](https://tsed.io/CONTRIBUTING.html)
 
-<a href="https://github.com/romakita/ts-express-decorators/graphs/contributors"><img src="https://opencollective.com/tsed/contributors.svg?width=890" /></a>
+<a href="https://github.com/TypedProject/ts-express-decorators/graphs/contributors"><img src="https://opencollective.com/tsed/contributors.svg?width=890" /></a>
 
 
 ## Backers

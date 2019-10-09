@@ -1,21 +1,22 @@
 import {ExpressApplication} from "@tsed/common";
 import {bootstrap, inject, TestContext} from "@tsed/testing";
-import * as SuperTest from "supertest";
 import {expect} from "chai";
+import * as SuperTest from "supertest";
 import {FakeServer} from "./app/FakeServer";
 
 describe("Rest", () => {
-  before(bootstrap(FakeServer));
+  let request: SuperTest.SuperTest<SuperTest.Test>;
+  before(TestContext.bootstrap(FakeServer));
   before(
     inject([ExpressApplication], (expressApplication: ExpressApplication) => {
-      this.app = SuperTest(expressApplication);
+      request = SuperTest(expressApplication);
     })
   );
   after(TestContext.reset);
   describe("integration", () => {
     describe("GET /rest", () => {
       it("should return html content", done => {
-        this.app
+        request
           .get("/rest/html")
           .expect(200)
           .end((err: any, response: any) => {
@@ -32,7 +33,7 @@ describe("Rest", () => {
 
     describe("GET /rest/calendars", () => {
       it("should return an object (without annotation)", done => {
-        this.app
+        request
           .get("/rest/calendars/classic/1")
           .expect(200)
           .end((err: any, response: any) => {
@@ -50,7 +51,7 @@ describe("Rest", () => {
       });
 
       it("should return an object (PathParamsType annotation)", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/annotation/test/1")
           .expect(200)
           .end((err: any, response: any) => {
@@ -68,7 +69,7 @@ describe("Rest", () => {
       });
 
       it("should return an object (Via promised response)", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/annotation/promised/1")
           .expect(200)
           .end((err: any, response: any) => {
@@ -86,7 +87,7 @@ describe("Rest", () => {
       });
 
       it("should return an object status (Via promised response)", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/annotation/status/1")
           .expect(202)
           .end((err: any, response: any) => {
@@ -105,7 +106,7 @@ describe("Rest", () => {
       });
 
       it("should use middleware to provide user info", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/middleware")
           .set({
             Authorization: "tokenauth"
@@ -127,7 +128,7 @@ describe("Rest", () => {
       });
 
       it("should set token", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/token/newTOKENXD")
           // .send({id: 1})
           .set("Cookie", "authorization=auth")
@@ -142,7 +143,7 @@ describe("Rest", () => {
       });
 
       it("should return get updated token", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/token")
           // .send({id: 1})
           .set("Cookie", "authorization=auth")
@@ -157,7 +158,7 @@ describe("Rest", () => {
       });
 
       it("should return query", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/query?search=ts-express-decorators")
           .expect(200)
           .end((err: any, response: any) => {
@@ -169,7 +170,7 @@ describe("Rest", () => {
       });
 
       it("should use mvc to provide info (Use)", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/mvc")
           .set({authorization: "token"})
           .expect(200)
@@ -188,7 +189,7 @@ describe("Rest", () => {
       });
 
       it("should use mvc to provide info (UseAfter)", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/middlewares2")
           .set({authorization: "token"})
           .expect(200)
@@ -207,7 +208,7 @@ describe("Rest", () => {
       });
 
       it("should set all headers", (done: Function) => {
-        this.app
+        request
           .get("/rest/calendars/headers")
           .expect(200)
           .end((err: any, response: any) => {
@@ -226,7 +227,7 @@ describe("Rest", () => {
 
     describe("PUT /rest/calendars", () => {
       it("should throw a BadRequest", (done: Function) => {
-        this.app
+        request
           .put("/rest/calendars")
           .expect(400)
           .end((err: any, response: any) => {
@@ -236,7 +237,7 @@ describe("Rest", () => {
       });
 
       it("should return an object", (done: Function) => {
-        this.app
+        request
           .put("/rest/calendars")
           .send({name: "test"})
           .expect(200)
@@ -250,33 +251,9 @@ describe("Rest", () => {
       });
     });
 
-    describe("DELETE /rest/calendars", () => {
-      it("should throw a Forbidden", (done: Function) => {
-        this.app
-          .delete("/rest/calendars")
-          .expect(403)
-          .end((err: any, response: any) => {
-            expect(response.error.text).to.contains("Forbidden");
-            done();
-          });
-      });
-
-      it("should throw a BadRequest", (done: Function) => {
-        this.app
-          .delete("/rest/calendars")
-          .set({authorization: "token"})
-          .expect(400)
-          .end((err: any, response: any) => {
-            expect(response.error.text).to.contains("Bad request, parameter \"request.body.id\" is required.");
-
-            done();
-          });
-      });
-    });
-
     describe("HEAD /rest/calendars/events", () => {
       it("should return headers", done => {
-        this.app
+        request
           .head("/rest/calendars/events")
           .expect(200)
           .end((err: any, response: any) => {
@@ -286,10 +263,17 @@ describe("Rest", () => {
           });
       });
     });
+    describe("GET /rest/calendars/events", () => {
+      it("should return array", async () => {
+        const response = await request.get("/rest/calendars/events").expect(200);
+
+        expect(response.body).to.deep.eq([{id: "1"}, {id: "2"}]);
+      });
+    });
 
     describe("PATCH /rest/calendars/events/:id", () => {
       it("should return headers", done => {
-        this.app
+        request
           .patch("/rest/calendars/events/1")
           .send({
             startDate: new Date(),
@@ -303,7 +287,7 @@ describe("Rest", () => {
 
     describe("POST /rest/user/", () => {
       it("should allow creation", done => {
-        this.app
+        request
           .post(`/rest/user/`)
           .send({name: "test", email: null, password: null})
           .expect(201)
@@ -317,7 +301,7 @@ describe("Rest", () => {
       });
 
       it("should return an error when email is empty", done => {
-        this.app
+        request
           .post(`/rest/user/`)
           .send({name: "test", email: "", password: null})
           .expect(400)
@@ -340,32 +324,36 @@ describe("Rest", () => {
           });
       });
 
-      it("should return an error when password is empty", done => {
-        this.app
-          .post(`/rest/user/`)
-          .send({name: "test", email: "test@test.fr", password: ""})
-          .expect(400)
-          .end((err: any, response: any) => {
-            expect(response.text).to.eq(
-              "Bad request on parameter \"request.body\".<br />At User.password should NOT be shorter than 6 characters"
-            );
+      it("should return an error when password is empty", async () => {
+        const [response]: any[] = await Promise.all([
+          request
+            .post(`/rest/user/`)
+            .send({name: "test", email: "test@test.fr", password: ""})
+            .expect(400),
+          request
+            .post(`/rest/user/`)
+            .send({name: "test", email: "test@test.fr", password: ""})
+            .expect(400)
+        ]);
 
-            expect(JSON.parse(response.headers.errors)).to.deep.eq([
-              {
-                keyword: "minLength",
-                dataPath: ".password",
-                schemaPath: "#/properties/password/minLength",
-                params: {limit: 6},
-                message: "should NOT be shorter than 6 characters",
-                modelName: "User"
-              }
-            ]);
-            done();
-          });
+        expect(response.text).to.eq(
+          "Bad request on parameter \"request.body\".<br />At User.password should NOT be shorter than 6 characters"
+        );
+
+        expect(JSON.parse(response.headers.errors)).to.deep.eq([
+          {
+            keyword: "minLength",
+            dataPath: ".password",
+            schemaPath: "#/properties/password/minLength",
+            params: {limit: 6},
+            message: "should NOT be shorter than 6 characters",
+            modelName: "User"
+          }
+        ]);
       });
 
       it("should allow creation (2)", done => {
-        this.app
+        request
           .post(`/rest/user/`)
           .send({name: "test", email: "test@test.fr", password: "test1267"})
           .expect(400)
@@ -379,7 +367,7 @@ describe("Rest", () => {
     describe("GET /rest/user/:id", () => {
       const send = (id: string) =>
         new Promise((resolve, reject) => {
-          this.app
+          request
             .get(`/rest/user/${id}`)
             .expect(200)
             .end((err: any, response: any) => {
@@ -426,7 +414,7 @@ describe("Rest", () => {
 
   describe("GET /rest/products", () => {
     it("should respond with the right userid", done => {
-      this.app
+      request
         .get(`/rest/products`)
         .expect(200)
         .end((err: any, response: any) => {
@@ -438,7 +426,7 @@ describe("Rest", () => {
 
   describe("Errors", () => {
     it("GET /rest/errors/custom-bad-request", done => {
-      this.app
+      request
         .get("/rest/errors/custom-bad-request")
         .expect(400)
         .end((err: any, response: any) => {
@@ -450,7 +438,7 @@ describe("Rest", () => {
     });
 
     it("POST /rest/errors/required-param", done => {
-      this.app
+      request
         .post("/rest/errors/required-param")
         .expect(400)
         .end((err: any, response: any) => {
@@ -473,7 +461,7 @@ describe("Rest", () => {
     });
 
     it("POST /rest/errors/required-model", done => {
-      this.app
+      request
         .post("/rest/errors/required-model")
         .expect(400)
         .end((err: any, response: any) => {
@@ -498,7 +486,7 @@ describe("Rest", () => {
     });
 
     it("POST /rest/errors/required-model-2", done => {
-      this.app
+      request
         .post("/rest/errors/required-model-2")
         .expect(400)
         .end((err: any, response: any) => {
@@ -521,7 +509,7 @@ describe("Rest", () => {
     });
 
     it("GET /rest/errors/error (original error is not displayed", done => {
-      this.app
+      request
         .get("/rest/errors/error")
         .expect(500)
         .end((err: any, response: any) => {
@@ -531,7 +519,7 @@ describe("Rest", () => {
     });
 
     it("GET /rest/errors/custom-internal-error", done => {
-      this.app
+      request
         .get("/rest/errors/custom-internal-error")
         .expect(500)
         .end((err: any, response: any) => {

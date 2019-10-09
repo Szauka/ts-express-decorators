@@ -5,7 +5,8 @@ module.exports = {
   theme: "tsed",
   themeConfig: {
     version: require("../../package").version,
-    repo: "romakita/ts-express-decorators",
+    repo: "TypedProject/ts-express-decorators",
+    openCollective: "tsed",
     gitterUrl: "https://gitter.im/Tsed-io/community",
     editLinks: true,
     docsDir: "docs",
@@ -13,9 +14,10 @@ module.exports = {
     ga: "UA-35240348-1",
     apiUrl: "/api.json",
     algolia: {
-      apiKey: 'f8a038207e461aaac0e2fd16403c2b01',
-      indexName: 'ts_ed',
+      apiKey: "f8a038207e461aaac0e2fd16403c2b01",
+      indexName: "ts_ed"
     },
+
     locales: {
       "/": {
         label: "English",
@@ -38,47 +40,58 @@ module.exports = {
             link: "/configuration.html"
           },
           {
+            text: "Docs",
+            items: [
+              {
+                text: "Overview",
+                items: [
+                  {link: "/docs/controllers.html", text: "Controllers", items: []},
+                  {link: "/docs/providers.html", text: "Providers"},
+                  {link: "/docs/model.html", text: "Models"},
+                  {link: "/docs/converters.html", text: "Converters"},
+                  {link: "/docs/middlewares.html", text: "Middlewares"},
+                  {link: "/docs/filters.html", text: "Filters"},
+                  {link: "/docs/interceptors.html", text: "Interceptors"},
+                  {link: "/docs/authentication.html", text: "Authentication"},
+                  {link: "/docs/hooks.html", text: "Hooks"}
+                ]
+              },
+              {
+                text: "Advanced",
+                items: [
+                  {link: "/docs/injection-scopes.html", text: "Injection scopes"},
+                  {link: "/docs/custom-providers.html", text: "Custom providers"},
+                  {link: "/docs/custom-endpoint-decorators.html", text: "Custom endpoint decorators"},
+                  {link: "/docs/testing.html", text: "Testing"},
+                  {link: "/api.html", text: "Api Reference"}
+                ]
+              }
+            ]
+          },
+          {
             text: "Guide",
             type: "links",
             items: [
               {link: "/tutorials/", text: "Examples"},
-              {link: "/tutorials/authentication.html", text: "Authentication"},
               {link: "/tutorials/session.html", text: "Session & cookies"},
               {link: "/tutorials/passport.html", text: "Passport.js"},
               {link: "/tutorials/typeorm.html", text: "TypeORM"},
               {link: "/tutorials/mongoose.html", text: "Mongoose"},
+              {link: "/tutorials/graphql.html", text: "GraphQL"},
+              {link: "/tutorials/seq.html", text: "Seq"},
               {link: "/tutorials/socket-io.html", text: "Socket.io"},
               {link: "/tutorials/swagger.html", text: "Swagger"},
               {link: "/tutorials/ajv.html", text: "Validation with AJV"},
-              {link: "/tutorials/upload-files-with-multer.html", text: "Upload files"},
+              {link: "/tutorials/multer.html", text: "Upload files"},
               {link: "/tutorials/serve-static-files.html", text: "Serve static files"},
               {link: "/tutorials/templating.html", text: "Templating"},
               {link: "/tutorials/throw-http-exceptions.html", text: "Throw HTTP exceptions"},
               {link: "/tutorials/not-found-page.html", text: "Customize 404"},
-              {link: "/tutorials/aws.html", text: "AWS project"}
+              {link: "/tutorials/aws.html", text: "AWS project"},
+              {link: "/tutorials/jest.html", text: "Jest"}
             ]
           },
-          {
-            text: "Documentation",
-            items: [
-              {link: "/docs/controllers.html", text: "Controllers"},
-              {link: "/docs/services.html", text: "Services"},
-              {link: "/docs/factory.html", text: "Factory"},
-              {link: "/docs/provider.html", text: "Provider"},
-              {link: "/docs/model.html", text: "Models"},
-              {link: "/docs/converters.html", text: "Converters"},
-              {link: "/docs/middlewares.html", text: "Middlewares"},
-              {link: "/docs/scope.html", text: "Scope"},
-              {link: "/docs/filters.html", text: "Filters"},
-              {link: "/docs/interceptors.html", text: "Interceptors"},
-              {link: "/docs/server-loader.html", text: "ServerLoader"},
-              {link: "/docs/testing.html", text: "Testing"}
-            ]
-          },
-          {
-            text: "Api Reference",
-            link: "/api.html"
-          }
+          {text: "4.x", link: "http://v4.tsed.io"}
         ],
 
         sidebar: {
@@ -86,10 +99,6 @@ module.exports = {
             title: "Middlewares",
             collapsable: false,
             children: [
-              "global-middleware",
-              "global-error-middleware",
-              "endpoint-middleware",
-              "endpoint-error-middleware",
               "call-sequence",
               "override-middleware",
               "override/authentication",
@@ -99,24 +108,33 @@ module.exports = {
             ]
           }],
 
-          "/docs/": [{
-            title: "Documentation",
-            collapsable: false,
-            children: [
-              "controllers",
-              "services",
-              "factory",
-              "provider",
-              "model",
-              "converters",
-              "middlewares",
-              "scope",
-              "filters",
-              "interceptors",
-              "server-loader",
-              "testing"
-            ]
-          }],
+          "/docs/": [
+            {
+              title: "Overview",
+              collapsable: false,
+              children: [
+                "controllers",
+                "providers",
+                "model",
+                "converters",
+                "middlewares",
+                "filters",
+                "interceptors",
+                "authentication",
+                "hooks"
+              ]
+            },
+            {
+              title: "Advanced",
+              collapsable: false,
+              children: [
+                "injection-scopes",
+                "custom-providers",
+                "custom-endpoint-decorators",
+                "testing"
+              ]
+            }
+          ],
 
 
           "/tutorials/": [{
@@ -124,12 +142,13 @@ module.exports = {
             collapsable: false,
             children: [
               "",
-              "authentication",
               "session",
               "passport",
               "typeorm",
               "mongoose",
+              "graphql",
               "socket-io",
+              "seq",
               "swagger",
               "ajv",
               "custom-validator",
@@ -138,17 +157,18 @@ module.exports = {
               "templating",
               "throw-http-exceptions",
               "not-found-page",
-              "aws"
+              "aws",
+              "jest"
             ]
           }]
         },
 
         otherTopics: [
-          "/tutorials/authentication",
           "/tutorials/session",
           "/tutorials/passport",
           "/tutorials/typeorm",
           "/tutorials/mongoose",
+          "/tutorials/graphql",
           "/tutorials/socket-io",
           "/tutorials/swagger",
           "/tutorials/ajv",
@@ -159,17 +179,20 @@ module.exports = {
           "/tutorials/throw-http-exceptions",
           "/tutorials/not-found-page",
           "/tutorials/aws",
+          "/tutorials/jest",
+          "/tutorials/seq",
           "/docs/controllers",
-          "/docs/services",
-          "/docs/factory",
-          "/docs/provider",
+          "/docs/providers",
           "/docs/model",
           "/docs/converters",
           "/docs/middlewares",
-          "/docs/scope",
           "/docs/filters",
           "/docs/interceptors",
-          "/docs/server-loader",
+          "/docs/authentication",
+          "/docs/hooks",
+          "/docs/injection-scopes",
+          "/docs/custom-providers",
+          "/docs/custom-endpoint-decorators",
           "/docs/testing"
         ],
 
@@ -185,6 +208,12 @@ module.exports = {
           documentationGeneratedWith: "Documentation generated with"
         }
       }
+    }
+  },
+  markdown: {
+    lineNumbers: true,
+    config: md => {
+      md.use(require("vuepress-theme-tsed/plugins/markdown-it-symbol"));
     }
   }
 };

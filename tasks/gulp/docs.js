@@ -8,35 +8,12 @@ const clean = require("gulp-clean");
 const ts = require("gulp-typescript");
 const logger = require("fancy-log");
 const chalk = require("chalk");
-const glob = require("glob");
 const {sync} = require("execa");
+const {toPromise} = require("./utils/toPromise");
+const {findPackages} = require("./utils/findPackages");
 
-const {tsdoc, packagesDir} = require("../../repo.config");
+const {tsdoc, doc, packagesDir} = require("../../repo.config");
 const {branch} = require("../../release.config");
-/**
- *
- * @returns {*}
- */
-const findPackages = () => {
-  const pkgs = glob.sync("*/package.json", {
-    cwd: packagesDir
-  });
-
-  return pkgs.map((pkg) => pkg.split("/")[0]);
-};
-
-/**
- *
- * @param stream
- * @returns {Promise<any>}
- */
-const toPromise = stream =>
-  new Promise((resolve, reject) =>
-    stream
-      .on("end", resolve)
-      .on("finish", resolve)
-      .on("error", reject)
-  );
 
 module.exports = {
   async clean(g = gulp) {
@@ -117,43 +94,46 @@ module.exports = {
   },
 
   async publish() {
-    const currentBranch = process.env.TRAVIS_BRANCH;
+    if (doc.publish) {
+      const currentBranch = process.env.TRAVIS_BRANCH;
 
-    if (currentBranch !== branch) {
-      console.log(
-        `This test run was triggered on the branch ${currentBranch}, while docs is configured to only publish from ${
-          branch
-          }, therefore a new docs version won’t be published.`
-      );
-      return;
+      if (currentBranch !== branch) {
+        console.log(
+          `This test run was triggered on the branch ${currentBranch}, while docs is configured to only publish from ${
+            branch
+            }, therefore a new docs version won’t be published.`
+        );
+        return;
+      }
+
+      const pkg = JSON.parse(fs.readFileSync("./package.json", {encoding: "utf8"}));
+      const {version} = pkg;
+      const {url, cname, branch: branchDoc} = doc;
+
+      const {GH_TOKEN} = process.env;
+      const repository = url.replace("https://", "");
+
+      const vuePressPath = "./docs/.vuepress/dist";
+
+      await module.exports.build();
+
+      fs.writeFileSync(`${vuePressPath}/CNAME`, cname, {});
+
+      await execa.shell("git init", {
+        cwd: vuePressPath
+      });
+
+      await execa.shell("git add -A", {
+        cwd: vuePressPath
+      });
+
+      await execa.shell(`git commit -m 'Deploy documentation v${version}'`, {
+        cwd: vuePressPath
+      });
+
+      await execa.shell(`git push -f https://${GH_TOKEN}@${repository} master:${branchDoc}`, {
+        cwd: vuePressPath
+      });
     }
-
-    const pkg = JSON.parse(fs.readFileSync("./package.json", {encoding: "utf8"}));
-    const {
-      version,
-      repository: {url}
-    } = pkg;
-    const {GH_TOKEN} = process.env;
-    const repository = url.replace("https://", "");
-
-    const vuePressPath = "./docs/.vuepress/dist";
-
-    await module.exports.build();
-
-    await execa.shell("git init", {
-      cwd: vuePressPath
-    });
-
-    await execa.shell("git add -A", {
-      cwd: vuePressPath
-    });
-
-    await execa.shell(`git commit -m 'Deploy documentation v${version}'`, {
-      cwd: vuePressPath
-    });
-
-    await execa.shell(`git push -f https://${GH_TOKEN}@${repository} master:gh-pages`, {
-      cwd: vuePressPath
-    });
   }
 };

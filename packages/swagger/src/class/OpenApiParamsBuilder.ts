@@ -1,5 +1,5 @@
 import {ParamMetadata, ParamRegistry, ParamTypes} from "@tsed/common";
-import {deepExtends, nameOf, Type, Store} from "@tsed/core";
+import {deepExtends, nameOf, Store, Type} from "@tsed/core";
 import {BodyParameter, FormDataParameter, HeaderParameter, Parameter, PathParameter, QueryParameter, Schema} from "swagger-schema-official";
 import {swaggerType} from "../utils";
 import {OpenApiModelSchemaBuilder} from "./OpenApiModelSchemaBuilder";
@@ -34,6 +34,10 @@ export class OpenApiParamsBuilder extends OpenApiModelSchemaBuilder {
     }
   }
 
+  public get parameters(): Parameter[] {
+    return this._parameters;
+  }
+
   /**
    *
    * @returns {this}
@@ -54,17 +58,73 @@ export class OpenApiParamsBuilder extends OpenApiModelSchemaBuilder {
 
   /**
    *
+   * @param param
+   * @returns {Schema}
+   */
+  protected createSchemaFromBodyParam(param: ParamMetadata): Schema {
+    let builder;
+
+    const {currentProperty, schema} = this.createSchemaFromExpression(param);
+
+    if (param.isClass) {
+      builder = new OpenApiModelSchemaBuilder(param.type);
+      builder.build();
+
+      deepExtends(this._definitions, builder.definitions);
+      deepExtends(this._responses, builder.responses);
+    }
+
+    Object.assign(currentProperty, super.createSchema(param));
+
+    return schema;
+  }
+
+  /**
+   *
+   * @param {ParamMetadata} model
+   * @returns {Schema}
+   */
+  protected createSchemaFromQueryParam(model: ParamMetadata): Schema {
+    const type: any = swaggerType(model.type);
+    if (model.isCollection) {
+      if (model.isArray) {
+        return {
+          type: "array",
+          collectionFormat: "multi",
+          items: {
+            type
+          }
+        } as any;
+      }
+
+      return {
+        type: "object",
+        additionalProperties: {
+          type
+        }
+      };
+    }
+
+    return {
+      type
+    };
+  }
+
+  /**
+   *
    * @returns {HeaderParameter[]}
    */
   private getInHeaders(): HeaderParameter[] {
-    return this.injectedParams.filter((param: ParamMetadata) => param.paramType === ParamTypes.HEADER).map(param => {
-      return Object.assign({}, param.store.get("baseParameter"), {
-        in: ParamTypes.HEADER,
-        name: param.expression,
-        type: swaggerType(param.type),
-        required: param.required
+    return this.injectedParams
+      .filter((param: ParamMetadata) => param.paramType === ParamTypes.HEADER)
+      .map(param => {
+        return Object.assign({}, param.store.get("baseParameter"), {
+          in: "header",
+          name: param.expression,
+          type: swaggerType(param.type),
+          required: param.required
+        });
       });
-    });
   }
 
   /**
@@ -79,7 +139,7 @@ export class OpenApiParamsBuilder extends OpenApiModelSchemaBuilder {
         const type = param.paramType === ParamTypes.FORM_DATA ? "file" : swaggerType(param.paramType);
 
         return Object.assign({}, param.store.get("baseParameter"), {
-          in: ParamTypes.FORM_DATA,
+          in: "formData",
           name,
           required: param.required,
           type
@@ -108,8 +168,8 @@ export class OpenApiParamsBuilder extends OpenApiModelSchemaBuilder {
       }
 
       return Object.assign({}, param.store.get("baseParameter"), {
-        in: ParamTypes.BODY,
-        name: ParamTypes.BODY,
+        in: "body",
+        name: "body",
         description: "",
         required: !!param.required,
         schema: {
@@ -133,8 +193,8 @@ export class OpenApiParamsBuilder extends OpenApiModelSchemaBuilder {
     }, {});
 
     return {
-      in: ParamTypes.BODY,
-      name: ParamTypes.BODY,
+      in: "body",
+      name: "body",
       required,
       description: "",
       schema: {
@@ -177,22 +237,24 @@ export class OpenApiParamsBuilder extends OpenApiModelSchemaBuilder {
    * @returns {HeaderParameter[]}
    */
   private getInQueryParams(): QueryParameter[] {
-    return this.injectedParams.filter((param: ParamMetadata) => param.paramType === ParamTypes.QUERY).map(param => {
-      if (param.required) {
-        this.addResponse400();
-      }
+    return this.injectedParams
+      .filter((param: ParamMetadata) => param.paramType === ParamTypes.QUERY)
+      .map(param => {
+        if (param.required) {
+          this.addResponse400();
+        }
 
-      return Object.assign(
-        {},
-        param.store.get("baseParameter"),
-        {
-          in: ParamTypes.QUERY,
-          name: param.expression,
-          required: !!param.required
-        },
-        this.createSchemaFromQueryParam(param)
-      );
-    });
+        return Object.assign(
+          {},
+          param.store.get("baseParameter"),
+          {
+            in: "query",
+            name: param.expression,
+            required: !!param.required
+          },
+          this.createSchemaFromQueryParam(param)
+        );
+      });
   }
 
   /**
@@ -222,65 +284,7 @@ export class OpenApiParamsBuilder extends OpenApiModelSchemaBuilder {
     return {currentProperty: current, schema};
   }
 
-  /**
-   *
-   * @param param
-   * @returns {Schema}
-   */
-  protected createSchemaFromBodyParam(param: ParamMetadata): Schema {
-    let builder;
-
-    const {currentProperty, schema} = this.createSchemaFromExpression(param);
-
-    if (param.isClass) {
-      builder = new OpenApiModelSchemaBuilder(param.type);
-      builder.build();
-
-      deepExtends(this._definitions, builder.definitions);
-      deepExtends(this._responses, builder.responses);
-    }
-
-    Object.assign(currentProperty, super.createSchema(param));
-
-    return schema;
-  }
-
-  /**
-   *
-   * @param {ParamMetadata} model
-   * @returns {Schema}
-   */
-  protected createSchemaFromQueryParam(model: ParamMetadata): Schema {
-    const type = swaggerType(model.type);
-    if (model.isCollection) {
-      if (model.isArray) {
-        return {
-          type: "array",
-          collectionFormat: "multi",
-          items: {
-            type
-          }
-        } as any;
-      }
-
-      return {
-        type: "object",
-        additionalProperties: {
-          type
-        }
-      };
-    }
-
-    return {
-      type
-    };
-  }
-
   private addResponse400() {
     this._responses[400] = {description: "Missing required parameter"};
-  }
-
-  public get parameters(): Parameter[] {
-    return this._parameters;
   }
 }

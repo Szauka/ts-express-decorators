@@ -1,12 +1,12 @@
-import {Store} from "@tsed/core";
 import {AuthenticatedMiddleware} from "../../components/AuthenticatedMiddleware";
-import {UseBefore} from "./useBefore";
+import {IAuthOptions} from "./authOptions";
+import {UseAuth} from "./useAuth";
 
 /**
- * Set authentication strategy on your endpoint.
+ * Use passport authentication strategy on your endpoint.
  *
  * ```typescript
- * @ControllerProvider('/mypath')
+ * @Controller('/mypath')
  * class MyCtrl {
  *
  *   @Get('/')
@@ -18,11 +18,18 @@ import {UseBefore} from "./useBefore";
  * @param options
  * @returns {Function}
  * @decorator
+ * @endpoint
  */
-export function Authenticated(options?: any) {
-  return Store.decorate((store: Store) => {
-    store.set(AuthenticatedMiddleware, options).merge("responses", {"403": {description: "Forbidden"}});
+export function Authenticated(options: IAuthOptions = {}): Function {
+  options = {
+    responses: {
+      "401": {
+        description: "Unauthorized"
+      },
+      ...(options.responses || {})
+    },
+    ...options
+  };
 
-    return UseBefore(AuthenticatedMiddleware);
-  });
+  return UseAuth(AuthenticatedMiddleware, options);
 }

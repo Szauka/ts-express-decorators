@@ -5,33 +5,33 @@
  * @param {{[p: string]: (collection: any[], value: any) => any}} reducers
  * @returns {any}
  */
-import {isArrayOrArrayClass, isPrimitiveOrPrimitiveClass} from "./ObjectUtils";
+import {classOf, isArrayOrArrayClass, isPrimitive, isPrimitiveOrPrimitiveClass} from "./ObjectUtils";
 
 export function deepExtends(out: any, obj: any, reducers: {[key: string]: (collection: any[], value: any) => any} = {}): any {
   if (obj === undefined || obj === null) {
-    return obj;
+    return out;
   }
 
-  if (isPrimitiveOrPrimitiveClass(obj) || typeof obj === "symbol" || typeof obj === "function") {
+  if (isPrimitive(obj) || typeof obj === "symbol" || typeof obj === "function") {
     return obj;
   }
 
   if (isArrayOrArrayClass(obj)) {
     out = out || [];
   } else {
-    out = out || {};
+    out = out || (obj ? (classOf(obj) !== Object ? Object.create(obj) : {}) : {});
   }
 
   const defaultReducer = reducers["default"]
     ? reducers["default"]
     : (collection: any[], value: any) => {
-        collection.push(value);
+        collection.indexOf(value) === -1 && collection.push(value);
 
         return collection;
       };
   const set = (key: string | number, value: any) => {
     if (isArrayOrArrayClass(obj)) {
-      out.push(value);
+      out.indexOf(value) === -1 && out.push(value);
     } else {
       out[key] = value;
     }

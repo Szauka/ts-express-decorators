@@ -1,9 +1,40 @@
-import {getClass, getClassOrSymbol, nameOf, NotEnumerable, RegistryKey, Store, Type} from "@tsed/core";
-import {ProviderScope} from "../interfaces";
+import {classOf, Enumerable, getKeys, isClass, nameOf, NotEnumerable, Store, Type} from "@tsed/core";
+import {IDIConfigurationOptions, ProviderScope} from "../interfaces";
 import {IProvider} from "../interfaces/IProvider";
 import {ProviderType} from "../interfaces/ProviderType";
+import {TokenProvider} from "../interfaces/TokenProvider";
 
 export class Provider<T> implements IProvider<T> {
+  @Enumerable()
+  public root: boolean = false;
+
+  @Enumerable()
+  public type: ProviderType | any = ProviderType.PROVIDER;
+
+  @Enumerable()
+  public injectable: boolean = true;
+
+  @Enumerable()
+  public instance: T;
+
+  @Enumerable()
+  public deps: any[];
+
+  @Enumerable()
+  public imports: any[];
+
+  @Enumerable()
+  public useFactory: Function;
+
+  @Enumerable()
+  public useAsyncFactory: Function;
+
+  @Enumerable()
+  public useValue: any;
+
+  @NotEnumerable()
+  protected _provide: TokenProvider;
+
   @NotEnumerable()
   protected _useClass: Type<T>;
 
@@ -11,105 +42,72 @@ export class Provider<T> implements IProvider<T> {
   protected _instance: T;
 
   @NotEnumerable()
-  protected _type: ProviderType | any = ProviderType.PROVIDER;
-
-  @NotEnumerable()
   private _store: Store;
 
-  protected _provide: RegistryKey;
+  [key: string]: any;
 
-  constructor(provide: RegistryKey) {
-    this._provide = getClassOrSymbol(provide);
-    this._useClass = getClass(this._provide);
-    this._store = Store.from(this._provide);
+  constructor(token: TokenProvider) {
+    this.provide = token;
+    this.useClass = token;
   }
 
-  /**
-   *
-   * @returns {any}
-   */
-  get provide(): any {
+  get token() {
     return this._provide;
   }
 
-  /**
-   *
-   * @param value
-   */
-  set provide(value: any) {
-    this._provide = value;
+  get provide(): TokenProvider {
+    return this._provide;
   }
 
-  /**
-   *
-   * @returns {Type<T>}
-   */
+  set provide(value: TokenProvider) {
+    if (value) {
+      this._provide = isClass(value) ? classOf(value) : value;
+      this._store = Store.from(value);
+    }
+  }
+
   get useClass(): Type<T> {
-    return this._useClass || this._provide;
+    return this._useClass;
   }
 
   /**
-   *
+   * Create a new store if the given value is a class. Otherwise the value is ignored.
    * @param value
    */
+  @Enumerable()
   set useClass(value: Type<T>) {
-    this._store = Store.from(value);
-    this._useClass = value;
+    if (isClass(value)) {
+      this._useClass = classOf(value);
+      this._store = Store.from(value);
+    }
   }
 
-  /**
-   *
-   * @returns {T}
-   */
-  get instance(): T {
-    return this._instance;
-  }
-
-  /**
-   *
-   * @param value
-   */
-  set instance(value: T) {
-    this._instance = value;
-  }
-
-  /**
-   *
-   * @returns {any}
-   */
-  get type(): any {
-    return this._type;
-  }
-
-  /**
-   *
-   * @param value
-   */
-  set type(value: any) {
-    this._type = value;
-  }
-
-  /**
-   *
-   * @returns {string}
-   */
   get className() {
+    return this.name;
+  }
+
+  get name() {
     return nameOf(this.provide);
   }
 
-  /**
-   *
-   * @returns {Store}
-   */
   public get store(): Store {
     return this._store;
   }
 
   /**
    * Get the scope of the provider.
+   *
+   * ::: tip Note
+   * Async provider is always a SINGLETON
+   * :::
+   *
    * @returns {boolean}
    */
   get scope(): ProviderScope {
+    if (this.isAsync()) {
+      return ProviderScope.SINGLETON;
+    }
+
     return this.store.get("scope");
   }
 
@@ -117,16 +115,37 @@ export class Provider<T> implements IProvider<T> {
    * Change the scope value of the provider.
    * @param scope
    */
+  @Enumerable()
   set scope(scope: ProviderScope) {
     this.store.set("scope", scope);
   }
 
+  get configuration(): Partial<IDIConfigurationOptions> {
+    return this.store.get("configuration");
+  }
+
+  @Enumerable()
+  set configuration(configuration: Partial<IDIConfigurationOptions>) {
+    this.store.set("configuration", configuration);
+  }
+
+  isAsync(): boolean {
+    return !!this.useAsyncFactory;
+  }
+
   clone(): Provider<any> {
-    const provider = new Provider(this._provide);
-    provider._type = this._type;
-    provider.useClass = this._useClass;
-    provider._instance = this._instance;
+    const provider = new (classOf(this))(this.token);
+
+    getKeys(this).forEach(key => {
+      if (this[key] !== undefined) {
+        provider[key] = this[key];
+      }
+    });
 
     return provider;
+  }
+
+  toString() {
+    return `Token:${this.name}`;
   }
 }

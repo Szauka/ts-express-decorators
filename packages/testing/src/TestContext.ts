@@ -3,15 +3,13 @@ import {
   createHttpServer,
   createHttpsServer,
   createInjector,
-  ExpressApplication,
-  HttpServer,
-  HttpsServer,
-  ServerLoader,
-  ServerSettingsService
+  loadInjector,
+  LocalsContainer,
+  OnInit,
+  ServerLoader
 } from "@tsed/common";
 import {Env, Type} from "@tsed/core";
 import {InjectorService} from "@tsed/di";
-import {$log} from "ts-log-debug";
 
 export class TestContext {
   private static _injector: InjectorService | null = null;
@@ -35,7 +33,7 @@ export class TestContext {
   static async create() {
     TestContext._injector = TestContext.createInjector();
 
-    await TestContext.injector.load();
+    await loadInjector(TestContext._injector);
   }
 
   /**
@@ -43,23 +41,11 @@ export class TestContext {
    */
   static createInjector(options: any = {}): InjectorService {
     const injector = createInjector(options);
-    const hasExpress = injector.has(ExpressApplication);
+    createExpressApplication(injector);
+    createHttpServer(injector);
+    createHttpsServer(injector);
 
-    if (!hasExpress) {
-      createExpressApplication(injector);
-    }
-
-    if (!injector.has(HttpServer)) {
-      createHttpServer(injector);
-    }
-
-    if (!injector.has(HttpsServer)) {
-      createHttpsServer(injector, {port: 8081});
-    }
-
-    if (!hasExpress) {
-      injector.get<ServerSettingsService>(ServerSettingsService)!.env = Env.TEST;
-    }
+    injector.settings.env = Env.TEST;
 
     return injector;
   }
@@ -72,26 +58,29 @@ export class TestContext {
    * @returns {Promise<void>}
    */
   static bootstrap(server: ServerLoader | any, options: any = {}): () => Promise<void> {
-    $log.stop();
-
     return async function before(): Promise<void> {
-      const instance = new (server as any)(...(options.args || []));
+      const instance = await ServerLoader.bootstrap(server, {
+        logger: {
+          level: "off"
+        },
+        ...options
+      });
 
-      instance.startServers = () => Promise.resolve();
+      await instance.callHook("$beforeListen");
+      await instance.callHook("$afterListen");
+      await instance.ready();
 
       // used by inject method
       TestContext._injector = instance.injector;
-
-      await instance.start();
     };
   }
 
   /**
    * Resets the test injector of the test context, so it won't pollute your next test. Call this in your `tearDown` logic.
    */
-  static reset() {
+  static async reset() {
     if (TestContext._injector) {
-      TestContext._injector.clear();
+      await TestContext._injector.destroy();
       TestContext._injector = null;
     }
   }
@@ -114,23 +103,26 @@ export class TestContext {
       }
 
       const injector: InjectorService = TestContext.injector;
-      const args = targets.map(target => (injector.has(target) ? injector.get(target) : injector.invoke(target)));
-      const result = await func(...args);
+      const deps = [];
 
-      return result;
+      for (const target of targets) {
+        deps.push(injector.has(target) ? injector.get(target) : await injector.invoke(target));
+      }
+
+      return await func(...deps);
     };
   }
 
   static invoke(target: Type<any>, providers: {provide: any | symbol; use: any}[]): any | Promise<any> {
-    const locals = new Map();
-
+    const locals = new LocalsContainer();
     providers.forEach(p => {
       locals.set(p.provide, p.use);
     });
 
-    const instance: any = TestContext.injector.invoke(target, locals);
+    const instance: OnInit = TestContext.injector.invoke(target, locals, {rebuild: true});
 
     if (instance && instance.$onInit) {
+      // await instance.$onInit();
       const result = instance.$onInit();
       if (result instanceof Promise) {
         return result.then(() => instance);

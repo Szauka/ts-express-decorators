@@ -1,13 +1,13 @@
 # Ts.ED
 
-[![Build Status](https://travis-ci.org/Romakita/ts-express-decorators.svg?branch=master)](https://travis-ci.org/Romakita/ts-express-decorators)
-[![Coverage Status](https://coveralls.io/repos/github/Romakita/ts-express-decorators/badge.svg?branch=master)](https://coveralls.io/github/Romakita/ts-express-decorators?branch=master)
+[![Build Status](https://travis-ci.org/TypedProject/ts-express-decorators.svg?branch=master)](https://travis-ci.org/TypedProject/ts-express-decorators)
+[![Coverage Status](https://coveralls.io/repos/github/TypedProject/ts-express-decorators/badge.svg?branch=master)](https://coveralls.io/github/TypedProject/ts-express-decorators?branch=master)
 ![npm](https://img.shields.io/npm/dm/@tsed/common.svg)
 [![npm version](https://badge.fury.io/js/%40tsed%2Fcommon.svg)](https://badge.fury.io/js/%40tsed%2Fcommon)
-[![Dependencies](https://david-dm.org/romakita/ts-express-decorators.svg)](https://david-dm.org/romakita/ts-express-decorators#info=dependencies)
-[![img](https://david-dm.org/romakita/ts-express-decorators/dev-status.svg)](https://david-dm.org/romakita/ts-express-decorators/#info=devDependencies)
-[![img](https://david-dm.org/romakita/ts-express-decorators/peer-status.svg)](https://david-dm.org/romakita/ts-express-decorators/#info=peerDependenciess)
-[![Known Vulnerabilities](https://snyk.io/test/github/romakita/ts-express-decorators/badge.svg)](https://snyk.io/test/github/romakita/ts-express-decorators)
+[![Dependencies](https://david-dm.org/TypedProject/ts-express-decorators.svg)](https://david-dm.org/TypedProject/ts-express-decorators#info=dependencies)
+[![img](https://david-dm.org/TypedProject/ts-express-decorators/dev-status.svg)](https://david-dm.org/TypedProject/ts-express-decorators/#info=devDependencies)
+[![img](https://david-dm.org/TypedProject/ts-express-decorators/peer-status.svg)](https://david-dm.org/TypedProject/ts-express-decorators/#info=peerDependenciess)
+[![Known Vulnerabilities](https://snyk.io/test/github/TypedProject/ts-express-decorators/badge.svg)](https://snyk.io/test/github/TypedProject/ts-express-decorators)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 [![backers](https://opencollective.com/tsed/tiers/backer/badge.svg?label=backer&color=brightgreen)](https://opencollective.com/tsed/tiers/backer/badge.svg?label=backer&color=brightgreen)
@@ -78,9 +78,9 @@ options in your `tsconfig.json` file.
 ## Quick start
 #### Create your express server
 
-TsExpressDecorators provide a [`ServerLoader`](docs/server-loader.md) class to configure your 
+TsExpressDecorators provide a [`ServerLoader`](https://tsed.io/docs/server-loader.html) class to configure your 
 express quickly. Just create a `server.ts` in your root project, declare 
-a new `Server` class that extends [`ServerLoader`](docs/server-loader.md).
+a new `Server` class that extends [`ServerLoader`](https://tsed.io/docs/server-loader.html).
 
 ```typescript
 import * as Express from "express";
@@ -97,7 +97,7 @@ export class Server extends ServerLoader {
      * This method let you configure the middleware required by your application to works.
      * @returns {Server}
      */
-    public $onMountingMiddlewares(): void|Promise<any> {
+    public $beforeRoutesInit(): void|Promise<any> {
     
         const cookieParser = require('cookie-parser'),
             bodyParser = require('body-parser'),
@@ -131,7 +131,7 @@ new Server().start();
 ```
 > By default ServerLoader load controllers in `${rootDir}/controllers` and mount it to `/rest` endpoint.
 
-To customize the server settings see [Configure server with decorator](http://romakita.github.io/#/configuration)
+To customize the server settings see [Configure server with decorator](https://tsed.io/configuration.html)
 
 #### Create your first controller
 
@@ -215,9 +215,9 @@ To test your method, just run your `server.ts` and send a http request on `/rest
 > **Note** : Decorators `@Get` support dynamic pathParams (see `/:id`) and `RegExp` like Express API. 
 
 ## Contributors
-Please read [contributing guidelines here](./CONTRIBUTING.md).
+Please read [contributing guidelines here](https://tsed.io/CONTRIBUTING.html)
 
-<a href="https://github.com/romakita/ts-express-decorators/graphs/contributors"><img src="https://opencollective.com/tsed/contributors.svg?width=890" /></a>
+<a href="https://github.com/TypedProject/ts-express-decorators/graphs/contributors"><img src="https://opencollective.com/tsed/contributors.svg?width=890" /></a>
 
 
 ## Backers

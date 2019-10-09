@@ -21,7 +21,7 @@ import {TaskCtrl} from "./TaskCtrl";
 
 @Controller({
   path: "/events",
-  dependencies: [TaskCtrl]
+  children: [TaskCtrl]
 })
 @MergeParams()
 export class EventCtrl extends BaseController {
@@ -29,7 +29,8 @@ export class EventCtrl extends BaseController {
    *
    */
   @Head("/")
-  head() {}
+  head() {
+  }
 
   /**
    *
@@ -41,7 +42,7 @@ export class EventCtrl extends BaseController {
     @Title("Title event")
     @Required()
     @BodyParams()
-    event: EventModel
+      event: EventModel
   ): EventModel {
     if (event.id === "0" || event.id === "") {
       throw new NotFound("Not found");
@@ -79,7 +80,7 @@ export class EventCtrl extends BaseController {
    * @returns {null}
    */
   @Post("/list")
-  @Authenticated()
+  @Authenticated({role: "admin"})
   @Returns(200, {use: EventModel, collection: Array})
   update(@BodyParams("event", EventModel) event: EventModel[]): EventModel[] {
     return event;
@@ -102,12 +103,16 @@ export class EventCtrl extends BaseController {
   byStatus(@QueryParams("status", String) status: string[]): Promise<any[]> | void {
     return Promise.resolve(status);
   }
+
   /**
    *
    * @returns {null}
    */
   @Get("/")
   query(): Promise<any[]> | void {
-    return Promise.resolve([]);
+    return Promise.resolve([
+      {id: "1"},
+      {id: "2"}
+    ]);
   }
 }

@@ -1,49 +1,100 @@
-import {decoratorArgs, descriptorOf, Store} from "@tsed/core";
-import {expect} from "chai";
+import {prototypeOf, Store, UnsupportedDecoratorType} from "@tsed/core";
 import * as Sinon from "sinon";
 import {EndpointRegistry, UseAfter} from "../../../../src/mvc";
 
-class Test {
-  test() {
+class CustomMiddleware {
+  use() {
   }
 }
 
 describe("UseAfter()", () => {
-  describe("when the decorator is use on a method", () => {
-    before(() => {
-      this.endpointRegistryStub = Sinon.stub(EndpointRegistry, "useAfter");
+  describe("when the decorator is use on a class", () => {
+    class Test {
+      test() {
+      }
+    }
 
-      this.returns = UseAfter(() => {
-      })(...decoratorArgs(Test, "test"));
+    before(() => {
+      Sinon.stub(EndpointRegistry, "useAfter");
     });
 
     after(() => {
-      this.endpointRegistryStub.restore();
+      // @ts-ignore
+      EndpointRegistry.useAfter.restore();
+    });
+
+    afterEach(() => {
+      // @ts-ignore
+      EndpointRegistry.useAfter.resetHistory();
     });
 
     it("should add the middleware on the use stack", () => {
-      this.endpointRegistryStub.should.be.calledWithExactly(Test, "test", [Sinon.match.func]);
-    });
+      // WHEN
+      UseAfter(CustomMiddleware)(Test);
 
-    it("should return a descriptor", () => {
-      this.returns.should.be.deep.eq(descriptorOf(Test, "test"));
+      // THEN
+      Store.from(Test).get("middlewares").should.deep.eq({useAfter: [CustomMiddleware]});
     });
   });
-
-  describe("when the decorator is use on a class", () => {
+  describe("when the decorator is use on a method", () => {
     before(() => {
-      this.returns = UseAfter(() => {
-      })(Test);
+      Sinon.stub(EndpointRegistry, "useAfter");
+    });
 
-      this.store = Store.from(Test).get("middlewares");
+    after(() => {
+      // @ts-ignore
+      EndpointRegistry.useAfter.restore();
+    });
+
+    afterEach(() => {
+      // @ts-ignore
+      EndpointRegistry.useAfter.resetHistory();
     });
 
     it("should add the middleware on the use stack", () => {
-      expect(this.store.useAfter[0]).to.be.a("function");
+      // WHEN
+      class Test {
+        @UseAfter(CustomMiddleware)
+        test() {
+        }
+      }
+
+      // THEN
+      EndpointRegistry.useAfter.should.be.calledWithExactly(prototypeOf(Test), "test", [CustomMiddleware]);
+    });
+  });
+  describe("when the decorator is use in another way", () => {
+    class Test {
+      test() {
+      }
+    }
+
+    before(() => {
+      Sinon.stub(EndpointRegistry, "useAfter");
     });
 
-    it("should return nothing", () => {
-      expect(this.returns).to.eq(undefined);
+    after(() => {
+      // @ts-ignore
+      EndpointRegistry.useAfter.restore();
+    });
+
+    afterEach(() => {
+      // @ts-ignore
+      EndpointRegistry.useAfter.resetHistory();
+    });
+
+    it("should add the middleware on the use stack", () => {
+      // WHEN
+      let actualError;
+      try {
+        UseAfter(CustomMiddleware)(Test, "property");
+      } catch (er) {
+        actualError = er;
+      }
+
+      // THEN
+      actualError.should.instanceOf(UnsupportedDecoratorType);
+      actualError.message.should.eq("UseAfter cannot used as property.static decorator on Test.property");
     });
   });
 });

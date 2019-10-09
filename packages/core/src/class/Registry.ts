@@ -16,7 +16,7 @@ export interface RegistryHook<T> {
   // onDelete?(key: RegistryKey): void;
 }
 
-export type RegistryKey = Type<any> | symbol | any;
+export type RegistryKey = string | symbol | Type<any> | Function | any;
 
 /**
  * @private
@@ -84,13 +84,13 @@ export class Registry<T, O> extends Map<RegistryKey, T> {
    * @param options
    */
   merge(target: RegistryKey, options: Partial<O>): void {
-    const meta: T & {[key: string]: any} = this.createIfNotExists(target);
+    const meta: {[key: string]: any} = this.createIfNotExists(target);
 
     Object.keys(options).forEach(key => {
       meta[key] = (options as any)[key];
     });
 
-    this.set(target, meta);
+    this.set(target, meta as T);
   }
 
   /**

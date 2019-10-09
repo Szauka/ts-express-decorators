@@ -1,10 +1,19 @@
-import * as Express from "express";
-import "@tsed/swagger";
 import "@tsed/ajv";
-import {GlobalAcceptMimesMiddleware} from "../../../packages/common/src/mvc/components/GlobalAcceptMimesMiddleware";
-import {ServerLoader} from "../../../packages/common/src/server/components/ServerLoader";
-import {ServerSettings} from "../../../packages/common/src/server/decorators/serverSettings";
-import "./middlewares/authentication";
+import {GlobalAcceptMimesMiddleware, ServerLoader, ServerSettings} from "@tsed/common";
+import "@tsed/graphql";
+import "@tsed/swagger";
+import {CalendarCtrl} from "./controllers/calendars/CalendarCtrl";
+import {EmptyCtrl} from "./controllers/calendars/EmptyCtrl";
+import {EventCtrl} from "./controllers/calendars/EventCtrl";
+import {HiddenCtrl} from "./controllers/calendars/HiddenCtrl";
+import {TaskCtrl} from "./controllers/calendars/TaskCtrl";
+import {ErrorsCtrl} from "./controllers/errors/ErrorsCtrl";
+import {SocketPageCtrl} from "./controllers/pages/SocketPageCtrl";
+import {ProductsCtrl} from "./controllers/products/ProductsCtrl";
+import {ResponseScenarioCtrl} from "./controllers/responses/ResponseScenarioCtrl";
+import {RestCtrl} from "./controllers/RestCtrl";
+import {UserCtrl} from "./controllers/users/UserCtrl";
+import "./middlewares/CustomAuthMiddleware";
 
 const rootDir = __dirname;
 
@@ -13,9 +22,24 @@ const rootDir = __dirname;
   port: 8002,
   httpsPort: 8082,
   mount: {
-    "/rest": `${rootDir}/controllers/**/**.ts`
+    "/rest": [
+      CalendarCtrl,
+      EmptyCtrl,
+      EventCtrl,
+      HiddenCtrl,
+      TaskCtrl,
+      SocketPageCtrl,
+      ProductsCtrl,
+      UserCtrl,
+      RestCtrl,
+      ErrorsCtrl,
+      ResponseScenarioCtrl
+    ]
   },
-  componentsScan: [`${rootDir}/services/**/**.ts`],
+  componentsScan: [
+    `${rootDir}/services/**/**.ts`,
+    `${rootDir}/graphql/**/*.ts`
+  ],
   serveStatic: {
     "/": `${rootDir}/views`
   },
@@ -23,6 +47,11 @@ const rootDir = __dirname;
   swagger: {
     spec: require(`${rootDir}/spec/swagger.default.json`),
     path: "/api-doc"
+  },
+  graphql: {
+    "default": {
+      "path": "/api/graphql"
+    }
   }
 })
 export class FakeServer extends ServerLoader {
@@ -33,7 +62,7 @@ export class FakeServer extends ServerLoader {
    * This method let you configure the middleware required by your application to works.
    * @returns {Server}
    */
-  public $onMountingMiddlewares(): void {
+  public $beforeRoutesInit(): void {
     const cookieParser = require("cookie-parser"),
       bodyParser = require("body-parser"),
       compress = require("compression"),
@@ -53,16 +82,5 @@ export class FakeServer extends ServerLoader {
     this.engine(".html", require("ejs").__express)
       .set("views", `${rootDir}/views`)
       .set("view engine", "html");
-  }
-
-  /**
-   * Set here your check authentification strategy.
-   * @param request
-   * @param response
-   * @param next
-   * @returns {boolean}
-   */
-  public $onAuth(request: Express.Request, response: Express.Response, next: Express.NextFunction): boolean {
-    return request.get("authorization") === "token";
   }
 }
